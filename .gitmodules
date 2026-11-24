@@ -1,3 +1,6 @@
 [submodule "hiby-uboot"]
-	path = hiby-uboot
+	path = uboot
 	url = https://github.com/edlf/hiby-uboot.git
+[submodule "kernel"]
+	path = kernel
+	url = https://github.com/edlf/hiby-custom-kernel.git
