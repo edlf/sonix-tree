@@ -1,9 +1,15 @@
 [submodule "hiby-uboot"]
 	path = uboot
 	url = https://github.com/edlf/hiby-uboot.git
-[submodule "kernel"]
-	path = kernel
-	url = https://github.com/edlf/hiby-custom-kernel.git
 [submodule "sonix-player"]
 	path = sonix-player
 	url = https://github.com/edlf/sonix-player.git
+[submodule "kernel"]
+	path = kernel
+	url = https://github.com/edlf/sonix-kernel.git
+[submodule "kernel-patches-upstream"]
+	path = kernel-patches-upstream
+	url = https://github.com/edlf/hiby-custom-kernel.git
+[submodule "recovery"]
+	path = recovery
+	url = https://github.com/edlf/hiby-custom-recovery.git

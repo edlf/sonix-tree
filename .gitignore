@@ -1,1 +1,4 @@
 *.upt
+extracted_assets/
+build/
+output/
