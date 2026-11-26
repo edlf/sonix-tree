@@ -4,6 +4,9 @@
 #
 #   ./build_images.sh --kernel-only     (first: output/<model>/xImage etc.)
 #   ./pack_firmware.sh                  -> output/r1/r1.upt, output/r3proii/r3proii.upt
+#                                       and, for fastboot (flash_system.sh),
+#                                       output/<model>/kernel-system.xImage and
+#                                       rootfs-system.squashfs, taken from that .upt
 #   ./pack_firmware.sh --strip-debug-tools
 #                                       the same, without the stock debugging
 #                                       tools (passed on to the packer)
@@ -99,8 +102,29 @@ done
 echo "=== packing"
 ( cd "$STAGE" && ./sonix_firmware_packer.sh ${PACKER_ARGS[@]+"${PACKER_ARGS[@]}"} )
 
+# The system's kernel and root fs as plain images, for flash_system.sh: taken
+# back out of the package just written, so they are exactly what it installs
+# and go together (the modules in the root fs are that kernel's). Its chunks
+# are joined in order and checked against the md5 ota_update.in gives.
+extract_image() { # extract_image DIR IMG_NAME OUT
+	local dir=$1 name=$2 out=$3 want have
+	want=$(awk -F= -v n="$name" '/^img_name=/{i=$2} i==n && /^img_md5=/{print $2; exit}' "$dir/ota_update.in" | tr -d '\r ')
+	cat "$dir/$name".[0-9][0-9][0-9][0-9].* >"$out.part"
+	have=$(md5sum "$out.part" | cut -d' ' -f1)
+	[ -n "$want" ] && [ "$want" = "$have" ] || { rm -f "$out.part"; die "$name in the package does not match its md5"; }
+	mv "$out.part" "$out"
+}
+
 for model in "${packed[@]}"; do
 	[ -s "$STAGE/$model.upt" ] || die "the packer wrote no $model.upt"
 	mv "$STAGE/$model.upt" "$OUTPUT/$model/$model.upt"
 	echo "-> output/$model/$model.upt ($(stat -c %s "$OUTPUT/$model/$model.upt") bytes)"
+	x=$STAGE/extract-$model
+	rm -rf "$x"
+	7z x -y -o"$x" "$OUTPUT/$model/$model.upt" >/dev/null || die "cannot open output/$model/$model.upt"
+	d=$(ls -d "$x"/ota_v* | head -1)
+	extract_image "$d" xImage "$OUTPUT/$model/kernel-system.xImage"
+	extract_image "$d" rootfs.squashfs "$OUTPUT/$model/rootfs-system.squashfs"
+	rm -rf "$x"
+	echo "-> output/$model/kernel-system.xImage, output/$model/rootfs-system.squashfs (for flash_system.sh)"
 done

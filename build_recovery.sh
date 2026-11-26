@@ -114,4 +114,5 @@ for MODEL in "${MODELS[@]}"; do
 	echo "  fastboot flash rootfs2 output/$MODEL/rootfs2-recovery.squashfs"
 done
 echo "  fastboot reboot recovery"
+echo "(or ./flash_recovery.sh [model], which does the same)"
 [ $STOCK_KERNEL = 1 ] || echo "Flash kernel2 and rootfs2 together: the modules in rootfs2 are that kernel's."
