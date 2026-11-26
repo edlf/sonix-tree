@@ -3,14 +3,16 @@
 #
 # The SPL and U-Boot read it: "nand", the number of entries, then per entry
 # name[32], size, offset, mask_flags, manager_mode (little endian). The
-# values are the R1's stock ones. The recovery root fs is also called
-# "rootfs" (fastboot shows it as rootfs2).
+# offsets and sizes are the R1's stock ones; the recovery root fs is called
+# "rootfs2", as on the R3 Pro II. (A table dumped from an R1 may show it as a
+# second "rootfs"; the bootloader, the kernel and the recovery treat the two
+# names alike, and fastboot shows it as rootfs2 either way.)
 #
 # name      offset      size        manager  mask_flags
 uboot       0x00000000  0x00080000  mtd      0
 kernel      0x00080000  0x00500000  mtd      0
 rootfs      0x00580000  0x02d00000  mtd      0
 kernel2     0x03280000  0x00500000  mtd      0
-rootfs      0x03780000  0x01800000  mtd      0
+rootfs2     0x03780000  0x01800000  mtd      0
 ota         0x04f80000  0x00080000  mtd      0
 userdata    0x05000000  0x03000000  ubi      0

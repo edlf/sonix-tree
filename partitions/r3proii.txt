@@ -1,19 +1,16 @@
-# Partition table of the HiBy R3 Pro II (SPI NAND), written into the
+# Partition table of the HiBy R3 Pro II (SPI NAND, 128 MiB), written into the
 # -withparts U-Boot images at 0x5800 by partitions/mkparttable.py.
 #
 # The SPL and U-Boot read it: "nand", the number of entries, then per entry
 # name[32], size, offset, mask_flags, manager_mode (little endian). The
-# values are the R1's stock ones: the R3 Pro II's own stock table has not
-# been read yet (its uboot partition is not in the .upt), so they are
-# assumed to be the same. Check them against a dump of its mtd0 before
-# installing a -withparts image. The recovery root fs is also called
-# "rootfs" (fastboot shows it as rootfs2).
+# values are the R3 Pro II's stock ones, read from a dump of its uboot
+# partition (mtd0): the same table as partitions/r1.txt.
 #
 # name      offset      size        manager  mask_flags
 uboot       0x00000000  0x00080000  mtd      0
 kernel      0x00080000  0x00500000  mtd      0
 rootfs      0x00580000  0x02d00000  mtd      0
 kernel2     0x03280000  0x00500000  mtd      0
-rootfs      0x03780000  0x01800000  mtd      0
+rootfs2     0x03780000  0x01800000  mtd      0
 ota         0x04f80000  0x00080000  mtd      0
 userdata    0x05000000  0x03000000  ubi      0

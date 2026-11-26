@@ -1,14 +1,15 @@
 #!/bin/bash
-# Builds Zee's Recovery (kernel2 + rootfs2) for a player, from scratch or
+# Builds Zee's Recovery (kernel2 + rootfs2) for the players, from scratch or
 # from what is already in output/:
 #
-#   ./build_recovery.sh                  r1, with the Sonix kernel
-#   ./build_recovery.sh r1 r3proii       those players
+#   ./build_recovery.sh                  r1 and r3proii, with the Sonix kernel
+#   ./build_recovery.sh r3proii          only that player
 #   ./build_recovery.sh --stock-kernel   keep HiBy's kernel2: only rootfs2 is made
 #   ./build_recovery.sh --no-build       build nothing that output/ already has:
 #                                        only the recovery app and the image
 #   ./build_recovery.sh --dump DIR       the NAND dump the stock recovery root fs
-#                                        comes from (default ~/<model>-mtd), when
+#                                        comes from (default ~/<model>-mtd, or
+#                                        <MODEL>/ here, as R3PROII/), when
 #                                        extracted_assets/<model>/recovery-rootfs
 #                                        is not there yet
 #   ./build_recovery.sh --jobs N         parallel jobs (default: CPUs)
@@ -65,7 +66,7 @@ while [ $# -gt 0 ]; do
 	esac
 	shift
 done
-[ ${#MODELS[@]} -gt 0 ] || MODELS=(r1)
+[ ${#MODELS[@]} -gt 0 ] || MODELS=(r1 r3proii)
 
 for MODEL in "${MODELS[@]}"; do
 	OUT=$HERE/output/$MODEL
@@ -74,8 +75,13 @@ for MODEL in "${MODELS[@]}"; do
 	if [ -x "$HERE/extracted_assets/$MODEL/recovery-rootfs/usr/bin/recoveryd" ]; then
 		echo "extracted_assets/$MODEL/recovery-rootfs is there"
 	else
-		d=${DUMP:-$HOME/$MODEL-mtd}
-		[ -e "$d" ] || die "no stock recovery yet and no NAND dump at $d: dump the player's flash (see recovery/README.md) and pass --dump DIR"
+		d=$DUMP
+		if [ -z "$d" ]; then
+			for c in "$HOME/$MODEL-mtd" "$HERE/$(echo "$MODEL" | tr 'a-z' 'A-Z')"; do
+				[ -e "$c" ] && { d=$c; break; }
+			done
+		fi
+		[ -n "$d" ] && [ -e "$d" ] || die "no stock recovery yet and no NAND dump (~/$MODEL-mtd, $(echo "$MODEL" | tr 'a-z' 'A-Z')/): dump the player's flash (see recovery/README.md) and pass --dump DIR"
 		"$HERE/extract_firmware.sh" --recovery "$d" "$MODEL"
 	fi
 

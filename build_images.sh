@@ -5,6 +5,7 @@
 #   ./build_images.sh r1                 only the ones named
 #   ./build_images.sh --kernel-only r1   (or --uboot-only)
 #   ./build_images.sh --jobs 8 ...       parallel jobs (default: CPUs)
+#   ./build_images.sh --nouid ...        also the -nouid U-Boot images
 #
 # output/<model>/
 #   xImage                     the kernel (a uImage, for the kernel partition)
@@ -13,11 +14,11 @@
 #                              configuration builds (modules.order)
 #   modules.builtin            names of the drivers built into the kernel
 #   u-boot-hiby_<model>.bin              SPL + U-Boot, blank partition table
-#   u-boot-hiby_<model>-nouid.bin        the same, USB serial not read from NAND
-#   u-boot-hiby_<model>-withparts.bin    with the partition table, and
-#   u-boot-hiby_<model>-nouid-withparts.bin
-#                              the same for -nouid; only for a player with a
-#                              partitions/<model>.txt (see below)
+#   u-boot-hiby_<model>-withparts.bin    with the partition table; only for
+#                              a player with a partitions/<model>.txt (below)
+#   u-boot-hiby_<model>-nouid[-withparts].bin
+#                              with --nouid only: the same, USB serial not
+#                              read from NAND
 #   build-<what>.log           the build logs
 #
 # The kernel is built from kernel/ with its own defconfig
@@ -50,12 +51,14 @@ ALL_MODELS=(r1 r3proii)
 JOBS=$(nproc)
 DO_KERNEL=1
 DO_UBOOT=1
+DO_NOUID=0
 MODELS=()
 while [ $# -gt 0 ]; do
 	case "$1" in
 	--jobs) JOBS=$2; shift ;;
 	--kernel-only) DO_UBOOT=0 ;;
 	--uboot-only) DO_KERNEL=0 ;;
+	--nouid) DO_NOUID=1 ;;
 	-h|--help) sed -n '2,/^set -e/p' "$0" | sed '$d; s/^# \{0,1\}//'; exit 0 ;;
 	r1|r3proii) MODELS+=("$1") ;;
 	*) echo "unknown argument: $1 (models: ${ALL_MODELS[*]})" >&2; exit 2 ;;
@@ -206,7 +209,7 @@ for model in "${MODELS[@]}"; do
 	if [ "$DO_KERNEL" = 1 ]; then build_kernel "$model"; fi
 	if [ "$DO_UBOOT" = 1 ]; then
 		build_uboot "$model"
-		build_uboot "$model" nouid
+		if [ "$DO_NOUID" = 1 ]; then build_uboot "$model" nouid; fi
 	fi
 done
 echo "done: $OUTPUT"
