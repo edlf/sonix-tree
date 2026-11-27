@@ -19,6 +19,7 @@
 #   u-boot-hiby_<model>-nouid[-withparts].bin
 #                              with --nouid only: the same, USB serial not
 #                              read from NAND
+#   u-boot-hiby_<model>.zip    u-boot-hiby_<model>.bin and -withparts.bin
 #   build-<what>.log           the build logs
 #
 # The kernel is built from kernel/ with its own defconfig
@@ -90,6 +91,7 @@ if [ "$DO_UBOOT" = 1 ]; then
 	[ -x "$UBOOT_TOOLCHAIN/mips-linux-gnu-gcc" ] || die "no mips-linux-gnu-gcc in UBOOT_TOOLCHAIN=$UBOOT_TOOLCHAIN"
 	[ -f "$USRC/boards.cfg" ] || die "no U-Boot in $USRC (git submodule update --init?)"
 	command -v rsync >/dev/null || die "rsync is needed"
+	command -v zip >/dev/null || die "zip is needed"
 fi
 
 # --- kernel -------------------------------------------------------------------
@@ -205,11 +207,27 @@ build_uboot() {
 	echo "  $(basename "$wp"): partition table from partitions/$model.txt"
 }
 
+# zip_uboot MODEL: the two U-Boot images in one zip, side by side
+zip_uboot() {
+	local model=$1 out=$OUTPUT/$1
+	local zip=$out/u-boot-hiby_$model.zip
+	local files=("$out/u-boot-hiby_$model.bin")
+
+	[ -f "$out/u-boot-hiby_$model-withparts.bin" ] &&
+		files+=("$out/u-boot-hiby_$model-withparts.bin")
+	rm -f "$zip"
+	zip -q -j -X "$zip" "${files[@]}"
+	echo "  $(basename "$zip"): $(cd "$out" && basename -a "${files[@]}" | tr '\n' ' ')"
+}
+
 for model in "${MODELS[@]}"; do
 	if [ "$DO_KERNEL" = 1 ]; then build_kernel "$model"; fi
 	if [ "$DO_UBOOT" = 1 ]; then
+		# a zip from an earlier build must not outlive a failed one
+		rm -f "$OUTPUT/$model/u-boot-hiby_$model.zip"
 		build_uboot "$model"
 		if [ "$DO_NOUID" = 1 ]; then build_uboot "$model" nouid; fi
+		zip_uboot "$model"
 	fi
 done
 echo "done: $OUTPUT"

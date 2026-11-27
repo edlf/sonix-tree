@@ -45,10 +45,13 @@
 #                                            ./build_images.sh). The base
 #                                            image, partition table area
 #                                            blank: the recovery copies the
-#                                            player's own table in. R1 only
-#                                            (see recovery/src/model.h); left
+#                                            player's own table in. Left
 #                                            out, with a warning, when it has
 #                                            not been built.
+#   /usr/share/zees-recovery/partition-table.bin (+ .md5)
+#                                            the table of partitions/<model>.txt
+#                                            the player's is checked against
+#                                            before the install
 # Then it is trimmed: HiBy's recoveryd, and the Bluetooth, D-Bus (with
 # sys_server), time sync and audio stacks go, with the time zones, web pages
 # and GLib/XML/locale data, and every shared library nothing left links to
@@ -183,10 +186,11 @@ else
 fi
 
 UBOOT=$HERE/output/$MODEL/u-boot-hiby_$MODEL.bin
-if [ "$MODEL" != r1 ]; then
-	echo "  no bootloader bundled: installing it is R1 only for now"
-elif [ ! -f "$UBOOT" ]; then
+PARTS=$HERE/partitions/$MODEL.txt
+if [ ! -f "$UBOOT" ]; then
 	echo "  warning: no ${UBOOT#"$HERE"/} (./build_images.sh): \"Install fastboot\" will not be offered" >&2
+elif [ ! -f "$PARTS" ]; then
+	echo "  warning: no ${PARTS#"$HERE"/}: \"Install fastboot\" will not be offered (it checks the player's table)" >&2
 else
 	# the SPL header the boot ROM wants, and a blank partition table area
 	[ "$(head -c 8 "$UBOOT" | od -An -tx1 | tr -d ' \n')" = 060504030255aa55 ] ||
@@ -197,6 +201,12 @@ else
 	install -m 0644 "$UBOOT" "$R/usr/share/zees-recovery/"
 	md5sum "$UBOOT" | cut -d' ' -f1 >"$R/usr/share/zees-recovery/u-boot-hiby_$MODEL.bin.md5"
 	echo "  bundled ${UBOOT#"$HERE"/} ($(stat -c %s "$UBOOT") bytes)"
+	# the table the player's is checked against before the install
+	# (recovery/src/parttable.h)
+	TABLE=$R/usr/share/zees-recovery/partition-table.bin
+	python3 "$HERE/partitions/mkparttable.py" "$PARTS" "$TABLE"
+	md5sum "$TABLE" | cut -d' ' -f1 >"$TABLE.md5"
+	echo "  bundled the partition table of ${PARTS#"$HERE"/}"
 fi
 
 cat >"$R/etc/init.d/S92_03_start_recovery" <<'EOF'
@@ -230,6 +240,9 @@ before=$(du -sk "$R" | cut -f1)
 TRIM=(
 	# the old recovery app (S92_03_start_recovery starts zees_recovery)
 	usr/bin/recoveryd
+	# HiBy's boot logo and what showed it: zees_recovery lights the panel
+	# once its menu is drawn (recovery/src/main.c)
+	etc/init.d/S11jpeg_display_shell etc/logo.jpeg etc/logo1.jpeg etc/logo2.jpeg usr/bin/cmd_jpeg_display
 	# Bluetooth
 	etc/init.d/S80_bt_init etc/bluetooth var/lib/bluetooth usr/libexec/bluetooth usr/lib/bluez
 	lib/firmware/bt_bcm

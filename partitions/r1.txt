@@ -4,9 +4,10 @@
 # The SPL and U-Boot read it: "nand", the number of entries, then per entry
 # name[32], size, offset, mask_flags, manager_mode (little endian). The
 # offsets and sizes are the R1's stock ones; the recovery root fs is called
-# "rootfs2", as on the R3 Pro II. (A table dumped from an R1 may show it as a
-# second "rootfs"; the bootloader, the kernel and the recovery treat the two
-# names alike, and fastboot shows it as rootfs2 either way.)
+# "rootfs2", as before firmware 2.0 and on the R3 Pro II. Firmware 2.0 wrote
+# a table that calls it "rootfs" again (rootfs twice), which HiBy's own OTA
+# scripts cannot look up; the recovery's "Install fastboot" renames it back
+# (recovery/src/parttable.h). The bootloader and fastboot accept either.
 #
 # name      offset      size        manager  mask_flags
 uboot       0x00000000  0x00080000  mtd      0

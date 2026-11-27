@@ -18,6 +18,9 @@
 #   kernel2-recovery.xImage        the Sonix kernel (not with --stock-kernel)
 #   rootfs2-recovery.squashfs      the recovery root fs: Zee's Recovery, and
 #                                  the kernel's own modules
+#   recovery-hiby_<model>.zip      both of the above (only rootfs2 with
+#                                  --stock-kernel)
+#   u-boot-hiby_<model>.zip        the U-Boot images (from build_images.sh)
 #
 # The steps, per player:
 #   1. the stock recovery root fs: ./extract_firmware.sh --recovery DUMP MODEL
@@ -67,9 +70,12 @@ while [ $# -gt 0 ]; do
 	shift
 done
 [ ${#MODELS[@]} -gt 0 ] || MODELS=(r1 r3proii)
+command -v zip >/dev/null || die "zip is needed"
 
 for MODEL in "${MODELS[@]}"; do
 	OUT=$HERE/output/$MODEL
+	# a zip from an earlier build must not outlive a failed one
+	rm -f "$OUT/recovery-hiby_$MODEL.zip"
 
 	step "$MODEL" "1/4 stock recovery root fs"
 	if [ -x "$HERE/extracted_assets/$MODEL/recovery-rootfs/usr/bin/recoveryd" ]; then
@@ -106,9 +112,16 @@ for MODEL in "${MODELS[@]}"; do
 	step "$MODEL" "4/4 recovery image"
 	if [ $STOCK_KERNEL = 1 ]; then
 		"$HERE/pack_recovery.sh" "$MODEL"
+		files=("$OUT/rootfs2-recovery.squashfs")
 	else
 		"$HERE/pack_recovery.sh" --kernel "$MODEL"
+		files=("$OUT/kernel2-recovery.xImage" "$OUT/rootfs2-recovery.squashfs")
 	fi
+
+	zip=$OUT/recovery-hiby_$MODEL.zip
+	rm -f "$zip"
+	zip -q -j -X "$zip" "${files[@]}"
+	echo "  -> output/$MODEL/$(basename "$zip")"
 done
 
 echo
